@@ -762,8 +762,8 @@ def read(
             name=["--query"],
             help=(
                 "Arbitrary SQL query to execute against the metadata. "
-                "The table is available under its feature table name "
-                "(e.g. 'files_root' for feature key 'files_root')."
+                "The table is available as both its specific table name (e.g., 'files_root') "
+                "and under the generic alias 'metadata'."
             ),
         ),
     ] = None,
@@ -834,7 +834,9 @@ def read(
 
                     ibis_expr = df.to_native()
                     base_sql = ibis.to_sql(ibis_expr)
-                    wrapped_query = f"WITH {table_name} AS ({base_sql}) {query}"
+                    wrapped_query = (
+                        f"WITH {table_name} AS ({base_sql}), metadata AS (SELECT * FROM {table_name}) {query}"
+                    )
                     res = metadata_store.conn.sql(wrapped_query)
                     arrow_table = _collect_to_arrow(res)
                 else:
@@ -843,6 +845,7 @@ def read(
             if query and not isinstance(metadata_store, IbisMetadataStore):
                 con = duckdb.connect()
                 con.register(table_name, arrow_table)
+                con.register("metadata", arrow_table)
                 arrow_table = con.query(query).fetch_arrow_table()
                 if hasattr(arrow_table, "read_all"):
                     arrow_table = arrow_table.read_all()
