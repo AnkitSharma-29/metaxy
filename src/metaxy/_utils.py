@@ -92,53 +92,6 @@ def collect_to_polars(frame: PolarsCompatibleFrame) -> pl.DataFrame:
     return collected.to_polars()
 
 
-def _collect_to_arrow(frame: Any) -> Any:
-    """Convert a Narwhals, Polars, or Ibis frame to a PyArrow Table.
-
-    This avoids going through Polars, which doesn't support Map types.
-    """
-    import pyarrow as pa
-
-    # Ibis expression
-    try:
-        import ibis
-
-        if isinstance(frame, ibis.Expr):
-            result = frame.to_pyarrow()
-            if isinstance(result, pa.RecordBatchReader):
-                return result.read_all()
-            if isinstance(result, pa.Table):
-                return result
-            return pa.Table.from_batches([result] if isinstance(result, pa.RecordBatch) else list(result))
-    except ImportError:
-        pass
-
-    # Native Polars
-    if isinstance(frame, pl.DataFrame):
-        return frame.to_arrow()
-    if isinstance(frame, pl.LazyFrame):
-        return frame.collect().to_arrow()
-
-    # Narwhals frames
-    if isinstance(frame, (nw.DataFrame, nw.LazyFrame)):
-        if frame.implementation == nw.Implementation.POLARS:
-            native = frame.to_native()
-            if isinstance(native, pl.LazyFrame):
-                return native.collect().to_arrow()
-            return native.to_arrow()
-
-        if frame.implementation == nw.Implementation.PYARROW:
-            return cast(pa.Table, frame.to_native())
-
-        if frame.implementation == nw.Implementation.IBIS:
-            return frame.to_native().to_pyarrow()
-
-        # Generic: collect to polars then convert
-        collected = frame.collect() if isinstance(frame, nw.LazyFrame) else frame
-        return collected.to_polars().to_arrow()
-
-    # Fallback
-    return collect_to_polars(frame).to_arrow()
 
 
 def lazy_frame_to_polars(frame: nw.LazyFrame[Any]) -> pl.LazyFrame:

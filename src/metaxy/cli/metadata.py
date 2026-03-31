@@ -798,7 +798,7 @@ def read(
     """
     import duckdb
 
-    from metaxy._utils import _collect_to_arrow
+    from metaxy._utils import collect_to_arrow
     from metaxy.cli.context import AppContext
     from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error, load_graph_for_command
     from metaxy.metadata_store.ibis import IbisMetadataStore
@@ -838,9 +838,9 @@ def read(
                         f"WITH {table_name} AS ({base_sql}), metadata AS (SELECT * FROM {table_name}) {query}"
                     )
                     res = metadata_store.conn.sql(wrapped_query)
-                    arrow_table = _collect_to_arrow(res)
+                    arrow_table = collect_to_arrow(res)
                 else:
-                    arrow_table = _collect_to_arrow(df)
+                    arrow_table = collect_to_arrow(df)
 
             if query and not isinstance(metadata_store, IbisMetadataStore):
                 con = duckdb.connect()
