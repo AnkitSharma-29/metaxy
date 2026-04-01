@@ -16,11 +16,7 @@ import pytest
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
-
-
-def _collect_to_arrow(frame: nw.LazyFrame | nw.DataFrame) -> pa.Table:
-    """Collect a Narwhals frame to a PyArrow Table."""
-    return (frame.collect() if isinstance(frame, nw.LazyFrame) else frame).to_arrow()
+from metaxy._utils import collect_to_arrow
 
 
 class IbisMapTests:
@@ -66,7 +62,7 @@ class IbisMapTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            table = _collect_to_arrow(result).sort_by("sample_uid")
+            table = collect_to_arrow(result).sort_by("sample_uid")
 
         assert table.num_rows == 2
         assert table.column("sample_uid").to_pylist() == [1, 2]
@@ -91,7 +87,7 @@ class IbisMapTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            table = _collect_to_arrow(result).sort_by("sample_uid")
+            table = collect_to_arrow(result).sort_by("sample_uid")
 
         prov = table.column("metaxy_provenance_by_field")
         assert dict(prov[0].as_py()) == {"frames": "a1", "audio": "b1"}
@@ -113,7 +109,7 @@ class IbisMapTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            table = _collect_to_arrow(result)
+            table = collect_to_arrow(result)
 
         assert table.num_rows == 1
         assert table.column("sample_uid").to_pylist() == [1]
@@ -139,7 +135,7 @@ class IbisMapTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            table = _collect_to_arrow(result).sort_by("sample_uid")
+            table = collect_to_arrow(result).sort_by("sample_uid")
 
         assert table.num_rows == 2
         assert pa.types.is_map(table.schema.field("metaxy_provenance_by_field").type)
